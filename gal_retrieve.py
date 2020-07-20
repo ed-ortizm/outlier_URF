@@ -30,16 +30,15 @@ def sp_plot(plate_ifu, ID, prospec):
         flx = hdul['FLUX'].data[:, ids[0], ids[1]]
 
     ## Plotting spectra
-    plt.figure(figsize=(8,6), dpi=80)
+    plt.figure(figsize=(24,18))
     plt.plot(wl, flx)
     plt.plot(prospec)
-    plt.savefig(f'spectra_{plate_ifu}.png')
+    plt.savefig(f'plateIFU_{plate_ifu}_ID_{ID}.png')
     plt.close()
-
 
 fnames = glob.glob(f'{all_data_proc}/*-*[0-9].npy')
 
-print('Retrieving metadata')
+print('Retrieving metadata!')
 ids, snrs, plate_ifus = get_metadata(fnames)
 
 ## Spaxels with high S/N (>10)
@@ -51,20 +50,36 @@ plate_ifus = plate_ifus[w10]
 srt_idx = np.argsort(snrs)
 split = np.array_split(srt_idx, 10)
 print(f'Size of split: {len(split)}. size of the bin: {split[9].size}')
-idx = split[9][19985]
-
-
 
 print('Loading outlier scores!')
 rhos = np.load('rhos.npy', mmap_mode='r')
-idx_prospec = np.argmax(rhos)
 
-print('Extracting fluxes for the most outliying specterum')
-prospec = np.load('spectra_bin_9.npy', mmap_mode = 'r')[:, idx_prospec]
+print('Outlier scores for the weirdest spectra')
 
+ids_prospecs = np.argpartition(rhos, -20)[-20:]
 
-print(f'the plate_ifu is {plate_ifus[idx]} & the id is {ids[idx]}')
+for n, idx in enumerate(ids_prospecs):
+    print(f'{n+1:02} --> {rhos[idx]}')
 
-plate_ifu = plate_ifus[idx]
-ID = ids[idx]
-## sp_plot(plate_ifu, ID, prospec)
+print('Extracting fluxes for the most outlying spectera')
+
+prospecs = np.load('spectra_bin_9.npy', mmap_mode = 'r')[:, ids_prospecs]
+
+## Indices for unproceced data
+
+idxs = split[9][ids_prospecs]
+
+## Plotting the spectra
+for n, idx in enumerate(idxs):
+    print(f'{n} --> Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]}')
+    plate_ifu = plate_ifus[idx]
+    ID = ids[idx]
+    sp_plot(plate_ifu, ID, prospecs[n])
+
+#id_prospec = np.argmax(rhos)
+#prospec = np.load('spectra_bin_9.npy', mmap_mode = 'r')[:, id_prospec]
+#idx = split[9][id_prospec]
+#print(f'Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]}')
+#plate_ifu = plate_ifus[idx]
+#ID = ids[idx]
+#sp_plot(plate_ifu, ID, prospec)
