@@ -33,7 +33,7 @@ def sp_plot(plate_ifu, ID, prospec):
     plt.figure(figsize=(24,18))
     plt.plot(wl, flx)
     plt.plot(prospec)
-    plt.savefig(f'plateIFU_{plate_ifu}_ID_{ID}.png')
+    plt.savefig(f'/home/edgar/zorro/MaNGAdata/outlier_URF/plateIFU_{plate_ifu}_ID_{ID}.png')
     plt.close()
 
 fnames = glob.glob(f'{all_data_proc}/*-*[0-9].npy')
@@ -57,13 +57,19 @@ rhos = np.load('rhos.npy', mmap_mode='r')
 print('Outlier scores for the weirdest spectra')
 
 ids_prospecs = np.argpartition(rhos, -20)[-20:]
+print(f'ids_prospecs: {ids_prospecs}, shape: {ids_prospecs.shape}')
+
 
 for n, idx in enumerate(ids_prospecs):
     print(f'{n+1:02} --> {rhos[idx]}')
 
 print('Extracting fluxes for the most outlying spectera')
 
-prospecs = np.load('spectra_bin_9.npy', mmap_mode = 'r')[:, ids_prospecs]
+bin9 = np.load('/home/edgar/zorro/MaNGAdata/spectra_bin_9.npy', mmap_mode = 'r')
+
+prospecs = bin9[:, ids_prospecs]
+
+print(f'Shape of prospecs {prospecs.shape}')
 
 ## Indices for unproceced data
 
@@ -74,12 +80,14 @@ for n, idx in enumerate(idxs):
     print(f'{n} --> Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]}')
     plate_ifu = plate_ifus[idx]
     ID = ids[idx]
-    sp_plot(plate_ifu, ID, prospecs[n])
+    print(f'Shape of prospec: {prospecs[:,n].shape}')
+    sp_plot(plate_ifu, ID, prospecs[:, n])
 
 #id_prospec = np.argmax(rhos)
-#prospec = np.load('spectra_bin_9.npy', mmap_mode = 'r')[:, id_prospec]
+#prospec = np.load('/home/edgar/zorro/MaNGAdata/spectra_bin_9.npy', mmap_mode = 'r')[:, id_prospec]
 #idx = split[9][id_prospec]
 #print(f'Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]}')
+#print(f'Outlier score: {rhos[id_prospec]}')
 #plate_ifu = plate_ifus[idx]
 #ID = ids[idx]
 #sp_plot(plate_ifu, ID, prospec)
