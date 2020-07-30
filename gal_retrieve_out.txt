@@ -1,0 +1,1 @@
+20 --> Plate IFU: 7972-12702 with bin ID 14 and spatial position: (array([29]), array([24]))

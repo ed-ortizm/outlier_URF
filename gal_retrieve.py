@@ -5,36 +5,17 @@ import os
 import glob
 
 import numpy as np
-import astropy.io.fits as pyfits
-import matplotlib
-import matplotlib.pyplot as plt
 
-from myRF_lib import get_metadata
+from myRF_lib import get_metadata, Logger, sp_plot
 from constants import data_proc, all_data_proc, n_wl
 
 
 ## Retrieve the name of the spectra
 
-def spec_name(plate_ifu):
-    cube = f'/home/edgar/zorro/MaNGAdata/all_data/manga-{plate_ifu}-LOGCUBE-HYB10-MILESHC-MASTARHC.fits'
-    maps = f'/home/edgar/zorro/MaNGAdata/all_data/manga-{plate_ifu}-MAPS-HYB10-MILESHC-MASTARHC.fits'
-    return cube, maps
 
-def sp_plot(plate_ifu, ID, prospec):
-    cube, maps = spec_name(plate_ifu)
 
-    with pyfits.open(cube) as hdul:
-        wl = hdul['WAVE'].data
-        bin_id = hdul['BINID'].data
-        ids = np.where(bin_id[0, :, :]==ID)
-        flx = hdul['FLUX'].data[:, ids[0], ids[1]]
 
-    ## Plotting spectra
-    plt.figure(figsize=(24,18))
-    plt.plot(wl, flx)
-    plt.plot(prospec)
-    plt.savefig(f'/home/edgar/zorro/MaNGAdata/outlier_URF/plateIFU_{plate_ifu}_ID_{ID}.png')
-    plt.close()
+sys.stdout = Logger()
 
 fnames = glob.glob(f'{all_data_proc}/*-*[0-9].npy')
 
@@ -54,11 +35,9 @@ print(f'Size of split: {len(split)}. size of the bin: {split[9].size}')
 print('Loading outlier scores!')
 rhos = np.load('rhos.npy', mmap_mode='r')
 
-print('Outlier scores for the weirdest spectra')
-
 ids_prospecs = np.argpartition(rhos, -20)[-20:]
-print(f'ids_prospecs: {ids_prospecs}, shape: {ids_prospecs.shape}')
 
+print('Outlier scores for the weirdest spectra')
 
 for n, idx in enumerate(ids_prospecs):
     print(f'{n+1:02} --> {rhos[idx]}')
@@ -69,19 +48,17 @@ bin9 = np.load('/home/edgar/zorro/MaNGAdata/spectra_bin_9.npy', mmap_mode = 'r')
 
 prospecs = bin9[:, ids_prospecs]
 
-print(f'Shape of prospecs {prospecs.shape}')
-
 ## Indices for unproceced data
 
 idxs = split[9][ids_prospecs]
 
 ## Plotting the spectra
 for n, idx in enumerate(idxs):
-    print(f'{n} --> Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]}')
     plate_ifu = plate_ifus[idx]
     ID = ids[idx]
-    print(f'Shape of prospec: {prospecs[:,n].shape}')
-    sp_plot(plate_ifu, ID, prospecs[:, n])
+    xy_pos = sp_plot(plate_ifu, ID, prospecs[:, n])
+    print(f'{n+1:02} --> Plate IFU: {plate_ifus[idx]} with bin ID {ids[idx]} and spatial position: {xy_pos}')
+
 
 #id_prospec = np.argmax(rhos)
 #prospec = np.load('/home/edgar/zorro/MaNGAdata/spectra_bin_9.npy', mmap_mode = 'r')[:, id_prospec]

@@ -19,17 +19,20 @@ dapall = pyfits.open('dapall-v2_7_1-2.4.1.fits')
 
 for fname in glob.glob(f'{all_data}/*LOGCUBE*.fits'):
 
-    print(f'Processing {fname.split("/")[-1]}')
+    print(f'Processing {fname.split("/")[-1]}...', end='\r')
 
     plate_ifu = '{}-{}'.format(*fname.split('-')[1:3])
     cubes = pyfits.open(fname)
     maps = pyfits.open(fname.replace('LOGCUBE','MAPS'))
+
+    ## Skipping data with quality concerns
     if maps['PRIMARY'].header['DAPQUAL'] > 0:
          cubes.close()
          maps.close()
          continue
 
-    bin_id = np.ravel(maps['BINID'].data[1, :, :])# stellar velocities
+    ## Stellar velocities
+    bin_id = np.ravel(maps['BINID'].data[1, :, :]) 
     bin_snr = np.ravel(maps['BIN_SNR'].data)
     stellar_vel = np.ravel(maps['STELLAR_VEL'].data)
     stellar_vel_mask = np.ravel(maps['STELLAR_VEL_MASK'].data)
@@ -50,12 +53,13 @@ for fname in glob.glob(f'{all_data}/*LOGCUBE*.fits'):
 
     flx = flx[:, indices]
 
+    ## De-redshifting
     ind = np.where(dapall['DAPALL'].data['plateifu'] == plate_ifu)
     z = dapall['DAPALL'].data['nsa_z'][ind][0]
 
     wl *= 1. / (1.+z)
 
-    # Correcting for the stellar velocity (all espaxels have stellar vels)
+    # Correcting for the stellar velocity redshift & interpolating
 
     all_flx = np.empty((n_wl, indices.size))
 
