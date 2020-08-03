@@ -49,5 +49,6 @@ for cnt_bin, bin in enumerate(np.array_split(srt_idx, n)):
     wkeep = np.where(np.count_nonzero(~np.isfinite(spectra), axis=1) < bin.size // 10)
     spectra = np.squeeze(spectra[wkeep, :])
     for flx in spectra:
+        ## Replacing indefinite values by the nanmedian
         flx[np.where(~np.isfinite(flx))] = np.nanmedian(flx)
     np.save(f'spectra_bin_{cnt_bin}.npy', spectra)

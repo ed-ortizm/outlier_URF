@@ -1,12 +1,17 @@
 #! /usr/bin/env python3
-
+from copy import copy
+import ctypes
 from time import time
 import os
-from copy import copy
+import multiprocessing as mp
+from multiprocessing.sharedctypes import RawArray
+
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier as RF
 import pickle
+
+from worker import initializer, worker
 
 class Analyzer:
     def __init__(self, fname):
@@ -33,6 +38,14 @@ class Analyzer:
 
     def apply(self):
         self.pred = self.rf.apply(self.data.T)
+        self.pred_shared = RawArray(ctypes.c_uint16, self.pred.ravel())
+
+    def parallel_analyze(self):
+        counter = mp.Value('i', 0)
+        with mp.Pool(initializer=initializer, initargs=((self.pred_shared, self.pred.shape), counter),
+                     processes=48) as pool:
+            print(self.pred.shape)
+            self.rhos = np.array(pool.map(worker, range(self.pred.shape[0])))
 
     def analyze(self, n_spec):
         self.rhos = np.empty(self.pred[:n_spec, :].shape[0])
@@ -56,11 +69,11 @@ ti = time()
 
 rf = Analyzer('/home/edgar/zorro/MaNGAdata/spectra_bin_9.npy')
 
-n_iles = 100
+n_iles = 209
 
 for step in range(n_iles):
     print(f'Training island forest {step:003}', end='\r')
-    rf.train(n_estimators=200)
+    rf.train(n_estimators=48)
 
 rf.clf_merging()
 
@@ -74,8 +87,8 @@ rf.clf_merging()
 #        rf = pickle.load(file)
 
 rf.apply()
-rf.analyze(n_spec=216_871) #216_871) Change for taking everython autoatically
+rf.parallel_analyze() #216_871) Change for taking everython autoatically
 
-#np.save('rhos.npy', rf.rhos)
+np.save('rhos.npy', rf.rhos)
 tf = time()
 print(f'Runing time= {tf-ti:.2f} [s]')
