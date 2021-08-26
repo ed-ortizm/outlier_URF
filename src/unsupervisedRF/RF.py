@@ -1,17 +1,22 @@
+import ctypes
 import multiprocessing as mp
+from multiprocessing.sharedctypes import RawArray
+################################################################################
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier as RF
 ################################################################################
 
+################################################################################
 class Analyzer:
     def __init__(self, fname):
         """
-        
+
         INPUTS
 
         OUTPUTS
 
         """
-        self.data = np.load(fname, mmap_mode='r')
+        # self.data = np.load(fname, mmap_mode='r')
         self.rf = []
         self.distance = None
         self.pred = None
